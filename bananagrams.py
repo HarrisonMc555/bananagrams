@@ -7,17 +7,20 @@ class Point:
         self.x = x
         self.y = y
 
-    def __cmp__(self, other):
+    def __lt__(self, other):
         if self.x < other.x:
-            return -1
+            return True
         elif self.x > other.x:
-            return 1
+            return False
         elif self.y < other.y:
-            return -1
+            return True
         elif self.y > other.y:
-            return 1
+            return False
         else:
-            return 0
+            return False
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
 
     def __hash__(self):
         return 37 * self.x + 89 * self.y
