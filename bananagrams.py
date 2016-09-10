@@ -112,12 +112,41 @@ def whole_dict(frequencies):
 def add_word(coords, bag, board):
     must_use = board[coords]
 
+def remove_letters(string,n):
+    if n == 0:
+        yield string
+    else:
+        for i in range(len(string)):
+            yield from remove_letters(string[:i]+string[i+1:],n-1)
 
-def start_game():
-    board = {}
+def t():
+    x = 0
+    while x < 10:
+        x += 1
+        yield x
 
 
-def test():
+def get_longest_word(letters,my_dict):
+    for i in range(len(letters)):
+        for word in remove_letters(letters,i):
+            # print(word)
+            code = sort_word(word)
+            if code in my_dict:
+                return my_dict[code]
+    else:
+        return None
+
+def subtract_word(string,sub):
+    for c in sub:
+        string = string.replace(c,'',1)
+    return string
+
+def start_game(letters):
+    board = {} # board = Board()
+
+
+
+def create_dict():
     return whole_dict(word_frequencies(read_words()))
 
 def solver():
