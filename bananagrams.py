@@ -168,13 +168,6 @@ def remove_letters(string,n):
         for i in range(len(string)):
             yield from remove_letters(string[:i]+string[i+1:],n-1)
 
-def t():
-    x = 0
-    while x < 10:
-        x += 1
-        yield x
-
-
 def get_longest_word(letters,my_dict):
     """ Get the longest word that uses only the given letters
 
