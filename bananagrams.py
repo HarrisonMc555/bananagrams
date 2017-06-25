@@ -2,6 +2,10 @@
 
 import copy
 
+LEFT_TO_RIGHT = True
+TOP_TO_BOTTOM = False
+
+
 class Point:
     """A cartesian coordinate"""
     def __init__(self, x, y):
@@ -225,6 +229,6 @@ def solver():
 
 if __name__ == '__main__':
     print(Board()
-          .add_word('kthxbai', Point(5,6), True)
-          .add_word('karp', Point(5,6), False)
-          .add_word('karp', Point(10,5), False))
+          .add_word('kthxbai', Point(5, 6), LEFT_TO_RIGHT)
+          .add_word('karp', Point(5, 6), TOP_TO_BOTTOM)
+          .add_word('karp', Point(10, 5), TOP_TO_BOTTOM))
