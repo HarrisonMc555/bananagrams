@@ -259,6 +259,7 @@ def places_to_add_word(point, word, board):
     """
 
     char = board.grid[point]
+    print("\t\tTry here: {} '{}'".format(point, char))
     # There can't be anything in either direction of the direction we're
     # trying our purposes. We could theoretically add something to the right
     # if it could extend the previous word or to the left if it could prepend
@@ -266,14 +267,21 @@ def places_to_add_word(point, word, board):
 
     # Try left & right
     if point.left() not in board.grid and point.right() not in board.grid:
+        print('\t\t\tTry left-to-right')
         for i in findOccurences(word, char):
+            print('\t\t\t\tfound {} at position {} in {}'.format(
+                char, i, word))
             origin = point.left(i)
             points = PointRange(origin, origin.right(len(word)))
             for i, p in enumerate(points):
+                print('\t\t\t\t\ti = {}, p = {}:'.format(i, p))
                 if (p in board.grid and board.grid[p] != word[i]) or \
-                   p.up() in board.grid or p.down() in board.grid:
+                   (p != origin and (p.up() in board.grid or
+                                     p.down() in board.grid)):
+                    print('\t\t\t\t\tFound problem....')
                     break
             else:
+                print("\t\t\tDidn't find any conflicts along line or next to")
                 left_end = origin.left()
                 right_end = origin.right(len(word))
                 if left_end not in board.grid and right_end not in board.grid:
@@ -281,6 +289,7 @@ def places_to_add_word(point, word, board):
 
     # Try up & down
     if point.up() not in board.grid and point.down() not in board.grid:
+        print('\t\t\tTry up-to-down')
         for i in findOccurences(word, char):
             origin = point.up(i)
             points = PointRange(origin, origin.down(len(word)))
@@ -291,7 +300,8 @@ def places_to_add_word(point, word, board):
                 print(p.left() in board.grid)
                 print(p.right() in board.grid)
                 if (p in board.grid and board.grid[p] != word[i]) or \
-                   p.left() in board.grid or p.right() in board.grid:
+                   (p != origin and (p.left() in board.grid or
+                                     p.right() in board.grid)):
                     break
             else:
                 up_end = origin.up()
@@ -374,14 +384,32 @@ if __name__ == '__main__':
         if len(words) > 5:
             print(code, words[:15])
     if not b:
-        exit
+        exit()
     b2, remaining = add_word('ush', b, my_dict)
-    print('b2:', b2)
+    print('b2')
+    print(b2)
     if not b2:
         print('here')
-        exit
+        print(b)
+        exit()
     print('past')
     b3, remaining = add_word('asd', b2, my_dict)
-    print('b3:', b3)
+    print('b3:')
+    print(b3)
     if not b3:
-        exit
+        print(b2)
+        exit()
+    b4, remaining = add_word('xhioars', b3, my_dict)
+    print('remaining:', remaining)
+    print(b4)
+    if not b4:
+        print(b3)
+        exit()
+    if not remaining:
+        exit()
+    b5, remaining = add_word(remaining, b4, my_dict)
+    print('remaining:', remaining)
+    print(b5)
+    if not b5:
+        print(b4)
+        exit()
