@@ -3,11 +3,31 @@
 import copy
 
 
+LEFT_RIGHT = True
+UP_DOWN = False
+
+
 class Point:
     """ A cartesian coordinate """
     def __init__(self, x, y):
         self.x = x
         self.y = y
+
+    def left(self, off=1):
+        """Returns a point to the left of self."""
+        return Point(self.x-off, self.y)
+
+    def right(self, off=1):
+        """Returns a point to the right of self."""
+        return Point(self.x+off, self.y)
+
+    def up(self, off=1):
+        """Returns a point to the up of self."""
+        return Point(self.x, self.y-off)
+
+    def down(self, off=1):
+        """Returns a point to the down of self."""
+        return Point(self.x, self.y+off)
 
     def __lt__(self, other):
         if self.x < other.x:
@@ -26,6 +46,12 @@ class Point:
 
     def __hash__(self):
         return 37 * self.x + 89 * self.y
+
+    def __str__(self):
+        return '({}, {})'.format(self.x, self.y)
+
+    def __repr__(self):
+        return 'Point({}, {})'.format(self.x, self.y)
 
 
 class PointRange:
@@ -50,6 +76,12 @@ class PointRange:
         else:
             for y in range(self.start.y, self.end.y):
                 yield Point(self.start.x, y)
+
+    def __str__(self):
+        return '[{}..{}]'.format(self.start, self.end)
+
+    def __repr__(self):
+        return 'PointRange({}, {})'.format(repr(self.start), repr(self.end))
 
 
 class Board:
@@ -82,6 +114,8 @@ class Board:
         point_range = PointRange(point, end)
         result.words[point_range] = word
         for i, point in enumerate(point_range):
+            if point in result.grid and result.grid[point] != word[i]:
+                raise Exception("Word didn't overlap correctly")
             result.grid[point] = word[i]
         return result
 
@@ -152,7 +186,37 @@ def whole_dict(frequencies):
     return my_dict
 
 
-def add_word(coords, bag, board):
+def add_word(bag, board, my_dict):
+    """Add one word to the board using given letters."""
+    for letters in all_substrings(bag):
+        print('Try with these letters: "{}"'.format(letters))
+        for point in board.grid:
+            new_board = try_to_add_word(point, letters, board, my_dict)
+            if new_board:
+                remaining_letters = subtract_word(bag, letters)
+                return new_board, remaining_letters
+        # for point, char in board.grid.items():
+        #     print("\tHere: {} '[{}]'".format(point, char))
+        #     all_letters = letters + char
+        #     # for word in my_dict[sort_word(all_letters)]:
+        #     code = sort_word(all_letters)
+        #     if code not in my_dict:
+        #         print('\tno words found containing letters "{}"'.format(
+        #             code))
+        #         continue
+        #     words = my_dict[code]
+        #     for word in words:
+        #         print('\t\tword: {}'.format(word))
+        #         for origin, direction in places_to_add_word(point,
+        #                                                     word, board):
+        #             # Stop trying, use first viable option
+        #             print('\t\tPlacing {} at {} (left-to-right? {})'.format(
+        #                 word, origin, direction))
+        #             return board.add_word(word, origin, direction)
+    return None, None
+
+
+def try_to_add_word(point, letters, board, my_dict):
     """Uses the letters in the bag to place a word on the board
 
     The `coords` is a Point that the word will intersect on the board. A word
@@ -162,21 +226,92 @@ def add_word(coords, bag, board):
     The word that is placed will not intersect with any other words that were
     previously placed on the board.
 
-    coords (Point)  : the point of intersection on the board
+    point (Point)   : the point of intersection on the board
     bag (set(char)) : the available letters to use
     board (Board)   : the board to place the word on
 
     """
-    must_use = board[coords]
+    char = board[point]
+    print("\tTry here: {} '[{}]'".format(point, char))
+    all_letters = letters + char
+    code = sort_word(all_letters)
+    if code not in my_dict:
+        print('\tno words found containing letters "{}"'.format(
+            code))
+        return None
+    words = my_dict[code]
+    for word in words:
+        print('\t\tword: {}'.format(word))
+        for origin, direction in places_to_add_word(point, word, board):
+            # Stop trying, use first viable option
+            print('\t\tPlacing {} at {} (left-to-right? {})'.format(
+                word, origin, direction))
+            return board.add_word(word, origin, direction)
+    return None
+
+
+def places_to_add_word(point, word, board):
+    """Yields (Point, direction) possibilities of placing word on board.
+
+    Yields the possible ways possible to add `word` to `board` such that
+    `char` overlaps the `board` at `point`.
+
+    """
+
+    char = board.grid[point]
+    # There can't be anything in either direction of the direction we're
+    # trying our purposes. We could theoretically add something to the right
+    # if it could extend the previous word or to the left if it could prepend
+    # it but we're not going to worry about that right now.
+
+    # Try left & right
+    if point.left() not in board.grid and point.right() not in board.grid:
+        for i in findOccurences(word, char):
+            origin = point.left(i)
+            points = PointRange(origin, origin.right(len(word)))
+            for i, p in enumerate(points):
+                if (p in board.grid and board.grid[p] != word[i]) or \
+                   p.up() in board.grid or p.down() in board.grid:
+                    break
+            else:
+                left_end = origin.left()
+                right_end = origin.right(len(word))
+                if left_end not in board.grid and right_end not in board.grid:
+                    yield (origin, LEFT_RIGHT)
+
+    # Try up & down
+    if point.up() not in board.grid and point.down() not in board.grid:
+        for i in findOccurences(word, char):
+            origin = point.up(i)
+            points = PointRange(origin, origin.down(len(word)))
+            for c, p in zip(word, points):
+                print(i, p)
+                print(board.grid)
+                print(p in board.grid)
+                print(p.left() in board.grid)
+                print(p.right() in board.grid)
+                if (p in board.grid and board.grid[p] != word[i]) or \
+                   p.left() in board.grid or p.right() in board.grid:
+                    break
+            else:
+                up_end = origin.up()
+                down_end = origin.down(len(word))
+                if up_end not in board.grid and down_end not in board.grid:
+                    yield (origin, UP_DOWN)
 
 
 def remove_letters(string, n):
     """ Yield all combinations of removing n letters from the string """
-    if n == 0:
+    if n <= 0 or not string:
         yield string
     else:
         for i in range(len(string)):
             yield from remove_letters(string[:i]+string[i+1:], n-1)
+
+
+def all_substrings(string):
+    for i in range(len(string)):
+        yield from remove_letters(string, i)
 
 
 def get_longest_word(letters, my_dict):
@@ -185,12 +320,11 @@ def get_longest_word(letters, my_dict):
     Iterates through using all the letters, then all minus one, etc. until it
     finds a word that uses all of those letters (and only those letters).
     """
-    for i in range(len(letters)):
-        for word in remove_letters(letters, i):
-            # print(word)
-            code = sort_word(word)
-            if code in my_dict:
-                return my_dict[code]
+    for word in all_substrings(letters):
+        # print(word)
+        code = sort_word(word)
+        if code in my_dict:
+            return my_dict[code]
     else:
         return None
 
@@ -218,8 +352,36 @@ def solver():
     input('Letters: ')
 
 
+def findOccurences(s, ch):
+    return (i for i, letter in enumerate(s) if letter == ch)
+
+
 if __name__ == '__main__':
-    print(Board()
-          .add_word('kthxbai', Point(5, 6), True)
-          .add_word('karp', Point(5, 6), False)
-          .add_word('karp', Point(10, 5), False))
+    b = (Board()
+         .add_word('kthxbai', Point(5, 6), LEFT_RIGHT)
+         .add_word('karp', Point(5, 6), UP_DOWN)
+         .add_word('karp', Point(10, 5), UP_DOWN))
+    print(b)
+    print(b.grid)
+    print(b.words)
+    p = Point(7, 6)
+    print(list(places_to_add_word(p, 'hah', b)))
+    p = Point(10, 8)
+    print(list(places_to_add_word(p, 'paappp', b)))
+    my_dict = create_dict()
+    print(list(my_dict.items())[:10])
+    for code, words in my_dict.items():
+        if len(words) > 5:
+            print(code, words[:15])
+    if not b:
+        exit
+    b2, remaining = add_word('ush', b, my_dict)
+    print('b2:', b2)
+    if not b2:
+        print('here')
+        exit
+    print('past')
+    b3, remaining = add_word('asd', b2, my_dict)
+    print('b3:', b3)
+    if not b3:
+        exit
