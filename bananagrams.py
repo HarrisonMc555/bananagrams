@@ -188,11 +188,12 @@ def whole_dict(frequencies):
 
 def add_word(bag, board, my_dict):
     """Add one word to the board using given letters."""
+    print('add letters:', bag)
     for letters in all_substrings(bag):
-        print('Try with these letters: "{}"'.format(letters))
+        # print('Try with these letters: "{}"'.format(letters))
         for point in board.grid:
-            new_board = try_to_add_word(point, letters, board, my_dict)
-            if new_board:
+            for new_board in try_to_add_word(point, letters, board, my_dict):
+                # Stop trying, use first viable option
                 remaining_letters = subtract_word(bag, letters)
                 return new_board, remaining_letters
         # for point, char in board.grid.items():
@@ -232,22 +233,20 @@ def try_to_add_word(point, letters, board, my_dict):
 
     """
     char = board[point]
-    print("\tTry here: {} '[{}]'".format(point, char))
+    # print("\tTry here: {} '[{}]'".format(point, char))
     all_letters = letters + char
     code = sort_word(all_letters)
     if code not in my_dict:
-        print('\tno words found containing letters "{}"'.format(
-            code))
-        return None
+        # print('\tno words found containing letters "{}"'.format(
+        #     code))
+        return
     words = my_dict[code]
     for word in words:
-        print('\t\tword: {}'.format(word))
+        # print('\t\tword: {}'.format(word))
         for origin, direction in places_to_add_word(point, word, board):
-            # Stop trying, use first viable option
-            print('\t\tPlacing {} at {} (left-to-right? {})'.format(
-                word, origin, direction))
-            return board.add_word(word, origin, direction)
-    return None
+            # print('\t\tPlacing {} at {} (left-to-right? {})'.format(
+            #     word, origin, direction))
+            yield board.add_word(word, origin, direction)
 
 
 def places_to_add_word(point, word, board):
@@ -259,7 +258,7 @@ def places_to_add_word(point, word, board):
     """
 
     char = board.grid[point]
-    print("\t\tTry here: {} '{}'".format(point, char))
+    # print("\t\tTry here: {} '{}'".format(point, char))
     # There can't be anything in either direction of the direction we're
     # trying our purposes. We could theoretically add something to the right
     # if it could extend the previous word or to the left if it could prepend
@@ -267,21 +266,21 @@ def places_to_add_word(point, word, board):
 
     # Try left & right
     if point.left() not in board.grid and point.right() not in board.grid:
-        print('\t\t\tTry left-to-right')
+        # print('\t\t\tTry left-to-right')
         for i in findOccurences(word, char):
-            print('\t\t\t\tfound {} at position {} in {}'.format(
-                char, i, word))
+            # print('\t\t\t\tfound {} at position {} in {}'.format(
+            #     char, i, word))
             origin = point.left(i)
             points = PointRange(origin, origin.right(len(word)))
             for i, p in enumerate(points):
-                print('\t\t\t\t\ti = {}, p = {}:'.format(i, p))
+                # print('\t\t\t\t\ti = {}, p = {}:'.format(i, p))
                 if (p in board.grid and board.grid[p] != word[i]) or \
                    (p != origin and (p.up() in board.grid or
                                      p.down() in board.grid)):
-                    print('\t\t\t\t\tFound problem....')
+                    # print('\t\t\t\t\tFound problem....')
                     break
             else:
-                print("\t\t\tDidn't find any conflicts along line or next to")
+                # print("\t\t\tDidn't find any conflicts along line or next to")
                 left_end = origin.left()
                 right_end = origin.right(len(word))
                 if left_end not in board.grid and right_end not in board.grid:
@@ -289,16 +288,16 @@ def places_to_add_word(point, word, board):
 
     # Try up & down
     if point.up() not in board.grid and point.down() not in board.grid:
-        print('\t\t\tTry up-to-down')
+        # print('\t\t\tTry up-to-down')
         for i in findOccurences(word, char):
             origin = point.up(i)
             points = PointRange(origin, origin.down(len(word)))
             for c, p in zip(word, points):
-                print(i, p)
-                print(board.grid)
-                print(p in board.grid)
-                print(p.left() in board.grid)
-                print(p.right() in board.grid)
+                # print(i, p)
+                # print(board.grid)
+                # print(p in board.grid)
+                # print(p.left() in board.grid)
+                # print(p.right() in board.grid)
                 if (p in board.grid and board.grid[p] != word[i]) or \
                    (p != origin and (p.left() in board.grid or
                                      p.right() in board.grid)):
@@ -372,6 +371,7 @@ if __name__ == '__main__':
          .add_word('karp', Point(5, 6), UP_DOWN)
          .add_word('karp', Point(10, 5), UP_DOWN))
     print(b)
+    print()
     print(b.grid)
     print(b.words)
     p = Point(7, 6)
@@ -387,7 +387,9 @@ if __name__ == '__main__':
         exit()
     b2, remaining = add_word('ush', b, my_dict)
     print('b2')
+    print()
     print(b2)
+    print('\n'+'-'*20)
     if not b2:
         print('here')
         print(b)
@@ -395,13 +397,19 @@ if __name__ == '__main__':
     print('past')
     b3, remaining = add_word('asd', b2, my_dict)
     print('b3:')
+    print()
     print(b3)
+    print('\n'+'-'*20)
     if not b3:
         print(b2)
         exit()
-    b4, remaining = add_word('xhioars', b3, my_dict)
+
+    # Dallin's try
+    b4, remaining = add_word('dehanig', b3, my_dict)
     print('remaining:', remaining)
+    print()
     print(b4)
+    print('\n'+'-'*20)
     if not b4:
         print(b3)
         exit()
@@ -409,7 +417,29 @@ if __name__ == '__main__':
         exit()
     b5, remaining = add_word(remaining, b4, my_dict)
     print('remaining:', remaining)
+    print()
     print(b5)
+    print('\n'+'-'*20)
     if not b5:
         print(b4)
+        exit()
+
+    # another try
+    b6, remaining = add_word('itrba', b5, my_dict)
+    print('remaining:', remaining)
+    print()
+    print(b6)
+    print('\n'+'-'*20)
+    if not b6:
+        print(b5)
+        exit()
+    if not remaining:
+        exit()
+    b7, remaining = add_word(remaining, b6, my_dict)
+    print('remaining:', remaining)
+    print()
+    print(b7)
+    print('\n'+'-'*20)
+    if not b7:
+        print(b6)
         exit()
