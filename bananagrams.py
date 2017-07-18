@@ -88,7 +88,7 @@ class PointRange:
 class Board:
     """A board of letter tiles
 
-    words (PointRange->str) : Dictionary that maps a PointRange to the word
+    words (str->PointRange) : Dictionary that maps a PointRange to the word
                               found in that range
     grid (Point->char)      : A dictionary that maps a Point to the character
                               found at that point
@@ -115,7 +115,7 @@ class Board:
         else:
             end = Point(point.x,  point.y + len(word))
         point_range = PointRange(point, end)
-        result.words[point_range] = word
+        result.words[word] = point_range
         for i, point in enumerate(point_range):
             if point in result.grid and result.grid[point] != word[i]:
                 raise Exception("Word didn't overlap correctly")
