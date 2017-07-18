@@ -101,6 +101,20 @@ class Board:
     def __getitem__(self, point):
         return self.grid[point]
 
+    def add_first_word(self, word):
+        # print('add_first_word: <{}>'.format(word))
+        result = copy.deepcopy(self)
+        point = Point(0, 0)
+        # default to left-right for first word
+        end = Point(point.x + len(word),  point.y)
+        point_range = PointRange(point, end)
+        result.words[word] = point_range
+        for i, point in enumerate(point_range):
+            result.grid[point] = word[i]
+        # print('add_first_word:', result)
+        return result
+
+
     def add_word(self, word, point, left_right):
         """Returns a new board with the added word
 
@@ -123,6 +137,8 @@ class Board:
         return result
 
     def __str__(self):
+        if not self.grid:
+            return ""
         min_x = min(self.grid.keys(), key=lambda p: p.x).x
         max_x = max(self.grid.keys(), key=lambda p: p.x).x
         min_y = min(self.grid.keys(), key=lambda p: p.y).y
@@ -193,13 +209,26 @@ def whole_dict(frequencies):
 
 def add_word(bag, board, my_dict):
     """Add one word to the board using given letters."""
-    print('add letters:', bag)
+    if not board.grid:
+        words = get_longest_word(bag, my_dict)
+        if not words:
+            raise Exception("Coudln't find a word containing letters", bag)
+        word = words[0]
+        new_board = board.add_first_word(word)
+        remaining_letters = subtract_word(bag, word)
+        # print('remaining_letters({}, {}) = "{}"'.format(bag, word,
+        #                                                 remaining_letters))
+        return new_board, remaining_letters
+    # print('add letters:', bag)
     for letters in all_substrings(bag):
         # print('Try with these letters: "{}"'.format(letters))
         for point in board.grid:
             for new_board in try_to_add_word(point, letters, board, my_dict):
                 # Stop trying, use first viable option
                 remaining_letters = subtract_word(bag, letters)
+                # print('about to leave add_word.\n',
+                #       '\tboard: {}\n\tremaining: {}'.format(repr(new_board),
+                #                                             remaining_letters))
                 return new_board, remaining_letters
         # for point, char in board.grid.items():
         #     print("\tHere: {} '[{}]'".format(point, char))
@@ -219,7 +248,7 @@ def add_word(bag, board, my_dict):
         #             print('\t\tPlacing {} at {} (left-to-right? {})'.format(
         #                 word, origin, direction))
         #             return board.add_word(word, origin, direction)
-    return None, None
+    return board, bag
 
 
 def try_to_add_word(point, letters, board, my_dict):
@@ -346,11 +375,13 @@ def get_longest_word(letters, my_dict):
 
 def subtract_word(string, sub):
     """ Removes the given substring from the string """
+    # print('subtract_word:', string, sub)
     for c in sub:
         if c not in string:
             # what to do here?
             pass
         string = string.replace(c, '', 1)
+    # print('\tstring:', string)
     return string
 
 
@@ -371,7 +402,48 @@ def findOccurences(s, ch):
     return (i for i, letter in enumerate(s) if letter == ch)
 
 
-if __name__ == '__main__':
+def interactive():
+    print(welcome_msg())
+    d = create_dict()
+    b = Board()
+    input_letters = parse_input(input())
+    remaining, remaining_last = input_letters, None
+    while input_letters:
+        while remaining and remaining != remaining_last:
+            # print('inner loop')
+            # print('board: {}, remaining: {} ({})'.format(
+            #     repr(b), remaining, type(remaining)))
+            remaining_last = remaining
+            b, remaining = add_word(remaining, b, d)
+        if remaining:
+            print(couldnt_place_msg(remaining))
+        print('\nBoard:\n\n{}\n'.format(b))
+        input_letters = parse_input(input())
+        remaining, remaining_last = input_letters, None
+    print(goodbye_msg())
+
+
+def parse_input(input_string):
+    return ''.join([s.lower() for s in input_string if s.isalpha()])
+
+
+def welcome_msg():
+    return """Welcome to the Bananagrams machine!
+
+Enter one or more letters and press enter. The machine will figure out a good
+place to put those letters.
+
+Hit enter twice to quit.
+"""
+
+def goodbye_msg():
+    return """Thanks for playing with the Bananagrams machine!"""
+
+
+def couldnt_place_msg(remaining):
+    return "Couldn't place these letters: {}".format(remaining)
+
+def test():
     b = (Board()
          .add_word('kthxbai', Point(5, 6), LEFT_RIGHT)
          .add_word('karp', Point(5, 6), UP_DOWN)
@@ -449,3 +521,11 @@ if __name__ == '__main__':
     if not b7:
         print(b6)
         exit()
+
+
+def main():
+    interactive()
+
+
+if __name__ == '__main__':
+    main()
