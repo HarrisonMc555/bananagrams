@@ -104,7 +104,8 @@ class Board:
     def add_first_word(self, word):
         # print('add_first_word: <{}>'.format(word))
         result = copy.deepcopy(self)
-        point = Point(0, 0)
+        # point = Point(0, 0)
+        point = Point(1000, 100)
         # default to left-right for first word
         end = Point(point.x + len(word),  point.y)
         point_range = PointRange(point, end)
