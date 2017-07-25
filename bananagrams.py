@@ -156,9 +156,9 @@ class Board:
         return '\n'.join([''.join(row) for row in real_grid])
 
 
-def read_words():
+def read_words(filename):
     """Reads words from text file"""
-    with open('words.txt') as fh:
+    with open(filename) as fh:
         return fh.read().lower().split()
 
 
@@ -203,6 +203,17 @@ def whole_dict(frequencies):
         my_dict[k] = sorted(list(v),
                             key=lambda x: frequencies[x],
                             reverse=True)
+    return my_dict
+
+
+def presorted_dict(words):
+    my_dict = {}
+    for word in words:
+        k = sort_word(word)
+        if k in my_dict:
+            my_dict[k].append(word)
+        else:
+            my_dict[k] = [word]
     return my_dict
 
 
@@ -392,7 +403,8 @@ def start_game(letters):
 
 def create_dict():
     """Creates a dictionary of word sets to sorted words from file"""
-    return whole_dict(word_frequencies(read_words()))
+    # return whole_dict(word_frequencies(read_words('words.txt')))
+    return presorted_dict(read_words('common-non-proper.txt'))
 
 
 def solver():
