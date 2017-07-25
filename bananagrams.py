@@ -176,7 +176,7 @@ def word_frequencies(words):
         if word in frequencies:
             frequencies[word] += 1
         else:
-            frequencies[word] = 0
+            frequencies[word] = 1
     return frequencies
 
 
