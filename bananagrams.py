@@ -104,8 +104,7 @@ class Board:
     def add_first_word(self, word):
         # print('add_first_word: <{}>'.format(word))
         result = copy.deepcopy(self)
-        # point = Point(0, 0)
-        point = Point(1000, 100)
+        point = Point(0, 0)
         # default to left-right for first word
         end = Point(point.x + len(word),  point.y)
         point_range = PointRange(point, end)
@@ -114,7 +113,6 @@ class Board:
             result.grid[point] = word[i]
         # print('add_first_word:', result)
         return result
-
 
     def add_word(self, word, point, left_right):
         """Returns a new board with the added word
@@ -291,7 +289,6 @@ def places_to_add_word(point, word, board):
     `char` overlaps the `board` at `point`.
 
     """
-
     char = board.grid[point]
     # print("\t\tTry here: {} '{}'".format(point, char))
     # There can't be anything in either direction of the direction we're
@@ -310,12 +307,12 @@ def places_to_add_word(point, word, board):
             for i, p in enumerate(points):
                 # print('\t\t\t\t\ti = {}, p = {}:'.format(i, p))
                 if (p in board.grid and board.grid[p] != word[i]) or \
-                   (p != origin and (p.up() in board.grid or
-                                     p.down() in board.grid)):
+                   (p != point and (p.up() in board.grid or
+                                    p.down() in board.grid)):
                     # print('\t\t\t\t\tFound problem....')
                     break
             else:
-                # print("\t\t\tDidn't find any conflicts along line or next to")
+                # print("\t\t\tDidn't find conflicts along or next to line")
                 left_end = origin.left()
                 right_end = origin.right(len(word))
                 if left_end not in board.grid and right_end not in board.grid:
@@ -323,19 +320,22 @@ def places_to_add_word(point, word, board):
 
     # Try up & down
     if point.up() not in board.grid and point.down() not in board.grid:
-        # print('\t\t\tTry up-to-down')
+        # print('\t\t\tTry up-to-down with:', word, char)
+        # print(board)
         for i in findOccurences(word, char):
+            # print('i: {} ({}[{}] = {})'.format(i, word, i, char))
             origin = point.up(i)
             points = PointRange(origin, origin.down(len(word)))
             for c, p in zip(word, points):
-                # print(i, p)
-                # print(board.grid)
-                # print(p in board.grid)
-                # print(p.left() in board.grid)
-                # print(p.right() in board.grid)
+                # print('i: {}, p: {}'.format(i, p))
+                # print('grid:', board.grid)
+                # print(p, 'p         in board.grid:', p in board.grid)
+                # print(p, 'p.left()  in board.grid:', p.left() in board.grid)
+                # print(p, 'p.right() in board.grid:', p.right() in board.grid)
+                # print('p == origin:', p == origin)
                 if (p in board.grid and board.grid[p] != word[i]) or \
-                   (p != origin and (p.left() in board.grid or
-                                     p.right() in board.grid)):
+                   (p != point and (p.left() in board.grid or
+                                    p.right() in board.grid)):
                     break
             else:
                 up_end = origin.up()
@@ -437,12 +437,14 @@ place to put those letters.
 Hit enter twice to quit.
 """
 
+
 def goodbye_msg():
     return """Thanks for playing with the Bananagrams machine!"""
 
 
 def couldnt_place_msg(remaining):
     return "Couldn't place these letters: {}".format(remaining)
+
 
 def test():
     b = (Board()
