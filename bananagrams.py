@@ -7,6 +7,10 @@ LEFT_RIGHT = True
 UP_DOWN = False
 
 
+class BanagramsException(Exception):
+    pass
+
+
 class Point:
     """A cartesian coordinate"""
     def __init__(self, x, y):
@@ -58,8 +62,9 @@ class PointRange:
     """A range of cartesian coordinates"""
     def __init__(self, start, end):
         if start.x != end.x and start.y != end.y:
-            raise Exception("{} and {} are not in same row or column".format(
-                start, end))
+            # raise Exception("{} and {} are not in same row or column".format(
+            raise BanagramsException("{} and {} are not in same row or column".
+                                     format(start, end))
         self.start = start
         self.end = end
 
@@ -158,12 +163,26 @@ class Board:
         result.connections[point_range] = []
         for i, point in enumerate(point_range):
             if point in result.grid and result.grid[point] != word[i]:
-                raise Exception("Word didn't overlap correctly")
+                raise BanagramsException("Word didn't overlap correctly")
             result.grid[point] = word[i]
             connected_words = [pr for pr in self.words if point in pr]
             result.connections[point_range].extend(connected_words)
             for connected_word in connected_words:
                 result.connections[connected_word].append(point_range)
+        return result
+
+    def remove_word(self, point_range):
+        connected_words = self.connections[point_range]
+        if any([len(self.connections[pr]) <= 1 for pr in connected_words]):
+            raise BanagramsException("Deleting this word would divide board" +
+                                     "into separte boards")
+        result = copy.deepcopy(self)
+        del result.connections[point_range]
+        del result.words[point_range]
+        for point in point_range:
+            # only delete points that weren't in any of the connections
+            if not [point for pr in connected_words if point in pr]:
+                del result.grid[point]
         return result
 
     def __str__(self):
@@ -253,7 +272,8 @@ def add_word(bag, board, my_dict):
     if not board.grid:
         words = get_longest_word(bag, my_dict)
         if not words:
-            raise Exception("Coudln't find a word containing letters", bag)
+            raise BanagramsException(
+                "Coudln't find a word containing letters", bag)
         word = words[0]
         new_board = board.add_first_word(word)
         remaining_letters = subtract_word(bag, word)
@@ -570,8 +590,44 @@ def test():
         exit()
 
 
+def remove_test():
+    b = Board().add_word("black", Point(0, 0), LEFT_RIGHT)
+    print(b)
+    print(b.connections)
+    print()
+
+    b = b.add_word("board", Point(0, 0), UP_DOWN)
+    print(b)
+    print(b.connections)
+    print()
+
+    b = b.add_word("ace", Point(0, 2), LEFT_RIGHT)
+    print(b)
+    print(b.connections)
+    print()
+
+    # b = b.remove_word(PointRange(Point(0, 0), Point(0, 5)))
+    try:
+        b = b.remove_word(PointRange(Point(0, 0), Point(0, 5)))
+        raise Exception(
+            "Shouldn't have been able to remove word that would split board")
+    except BanagramsException:
+        pass
+
+    b = b.add_word("are", Point(2, 0), UP_DOWN)
+    print(b)
+    print(b.connections)
+    print()
+
+    b = b.remove_word(PointRange(Point(0, 0), Point(0, 5)))
+    print(b)
+    print(b.connections)
+    print()
+
+
 def main():
-    interactive()
+    remove_test()
+    # interactive()
 
 
 if __name__ == '__main__':
