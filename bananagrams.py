@@ -57,6 +57,9 @@ class Point:
 class PointRange:
     """A range of cartesian coordinates"""
     def __init__(self, start, end):
+        if start.x != end.x and start.y != end.y:
+            raise Exception("{} and {} are not in same row or column".format(
+                start, end))
         self.start = start
         self.end = end
 
@@ -78,6 +81,21 @@ class PointRange:
             for y in range(self.start.y, self.end.y):
                 yield Point(self.start.x, y)
 
+    def __contains__(self, point):
+        """Return True if a point is in the range"""
+        if self.left_right():
+            return point.y == self.start.y and \
+                self.start.x <= point.x <= self.end.x
+        else:
+            return point.x == self.start.x and \
+                self.start.y <= point.y <= self.end.y
+
+    def __eq__(self, other):
+        return self.start == other.start and self.end == other.end
+
+    def __hash__(self):
+        return 211*hash(self.start) + 223*hash(self.end)
+
     def __str__(self):
         return '[{}..{}]'.format(self.start, self.end)
 
@@ -88,31 +106,39 @@ class PointRange:
 class Board:
     """A board of letter tiles
 
-    words (str->PointRange) : Dictionary that maps a PointRange to the word
-                              found in that range
-    grid (Point->char)      : A dictionary that maps a Point to the character
-                              found at that point
+    words (PointRange->str)
+      Dictionary that maps a PointRange to the word found in that range
+
+    grid (Point->char)
+      A dictionary that maps a Point to the character found at that point
+
+    connections (PointRange->[PointRange])
+      A list of all of the words that a given word is connected to. The
+      PointRange of each word is used as a unique identifier
 
     """
     def __init__(self):
         self.words = {}
         self.grid = {}
+        self.connections = {}
 
     def __getitem__(self, point):
         return self.grid[point]
 
     def add_first_word(self, word):
-        # print('add_first_word: <{}>'.format(word))
-        result = copy.deepcopy(self)
-        point = Point(0, 0)
-        # default to left-right for first word
-        end = Point(point.x + len(word),  point.y)
-        point_range = PointRange(point, end)
-        result.words[word] = point_range
-        for i, point in enumerate(point_range):
-            result.grid[point] = word[i]
-        # print('add_first_word:', result)
-        return result
+        return self.add_word(word, Point(0, 0), LEFT_RIGHT)
+        # # print('add_first_word: <{}>'.format(word))
+        # result = copy.deepcopy(self)
+        # point = Point(0, 0)
+        # # default to left-right for first word
+        # end = Point(point.x + len(word),  point.y)
+        # point_range = PointRange(point, end)
+        # result.words[point_range] = word
+        # result.connections[point_range] = []
+        # for i, point in enumerate(point_range):
+        #     result.grid[point] = word[i]
+        # # print('add_first_word:', result)
+        # return result
 
     def add_word(self, word, point, left_right):
         """Returns a new board with the added word
@@ -128,11 +154,16 @@ class Board:
         else:
             end = Point(point.x,  point.y + len(word))
         point_range = PointRange(point, end)
-        result.words[word] = point_range
+        result.words[point_range] = word
+        result.connections[point_range] = []
         for i, point in enumerate(point_range):
             if point in result.grid and result.grid[point] != word[i]:
                 raise Exception("Word didn't overlap correctly")
             result.grid[point] = word[i]
+            connected_words = [pr for pr in self.words if point in pr]
+            result.connections[point_range].extend(connected_words)
+            for connected_word in connected_words:
+                result.connections[connected_word].append(point_range)
         return result
 
     def __str__(self):
@@ -398,6 +429,7 @@ def subtract_word(string, sub):
 
 
 def start_game(letters):
+    global board
     board = {}  # board = Board()
 
 
